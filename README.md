@@ -9,7 +9,8 @@ Auf dem Handy die neueste Version unter **Releases** öffnen
 (https://github.com/ENjxzlt/Dazz/releases/latest), `DazzClone.apk` antippen,
 Installation aus unbekannten Quellen erlauben.
 
-Neue Version veröffentlichen: Tag pushen, z. B. `git tag v1.1 && git push origin v1.1`.
+Neue Version veröffentlichen: *Actions → Android APK → Run workflow* mit Version (z. B. `v1.1`),
+oder einen Tag `v*` pushen.
 
 Das APK ist mit dem Debug-Key signiert (nicht für den Play Store geeignet).
 

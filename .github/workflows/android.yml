@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release-Version, z. B. v1.1 (leer = kein Release)"
+        required: false
 
 permissions:
   contents: write
@@ -31,11 +35,15 @@ jobs:
           name: dazz-clone-apk
           path: DazzClone.apk
 
-      # Pushing a tag like v1.0 publishes a GitHub Release with the APK attached.
+      # A version tag push, or a manual run with a version, publishes a GitHub Release.
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.version != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.version || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: Dazz Clone ${{ inputs.version || github.ref_name }}
+          make_latest: true
           files: DazzClone.apk
           body: |
             **Installieren:** `DazzClone.apk` unten bei *Assets* direkt auf dem Handy antippen,
