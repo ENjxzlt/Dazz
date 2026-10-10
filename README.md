@@ -5,8 +5,11 @@ Retro-Film-Kamera für Android im Stil von Dazz Cam: Live-Vorschau mit Filmlook,
 
 ## Installieren
 
-1. Repo → **Actions** → letzter Lauf von *Android APK* → Artifact `dazz-clone-apk` herunterladen.
-2. ZIP entpacken, `app-release.apk` aufs Handy, Installation aus unbekannten Quellen erlauben.
+Auf dem Handy die neueste Version unter **Releases** öffnen
+(https://github.com/ENjxzlt/Dazz/releases/latest), `DazzClone.apk` antippen,
+Installation aus unbekannten Quellen erlauben.
+
+Neue Version veröffentlichen: Tag pushen, z. B. `git tag v1.1 && git push origin v1.1`.
 
 Das APK ist mit dem Debug-Key signiert (nicht für den Play Store geeignet).
 
