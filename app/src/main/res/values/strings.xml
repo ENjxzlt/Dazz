@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Dazz Clone</string>
+    <string name="permission_needed">Kamerazugriff wird benötigt.</string>
+    <string name="saved">Gespeichert</string>
+    <string name="save_failed">Speichern fehlgeschlagen</string>
+    <string name="camera_failed">Kamera konnte nicht gestartet werden</string>
+</resources>

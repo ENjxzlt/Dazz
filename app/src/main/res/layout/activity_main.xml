@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical">
+
+    <!-- Top bar: flash, timer, date stamp -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp">
+
+        <TextView
+            android:id="@+id/flashButton"
+            style="@style/TopToggle"
+            android:text="FLASH OFF" />
+
+        <TextView
+            android:id="@+id/timerButton"
+            style="@style/TopToggle"
+            android:text="TIMER OFF" />
+
+        <TextView
+            android:id="@+id/dateButton"
+            style="@style/TopToggle"
+            android:text="DATE ON" />
+    </LinearLayout>
+
+    <!-- Viewfinder -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="12dp">
+
+        <com.dazzclone.cam.AspectFrameLayout
+            android:id="@+id/viewfinder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center">
+
+            <android.opengl.GLSurfaceView
+                android:id="@+id/glView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/dateOverlay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="14dp"
+                android:fontFamily="monospace"
+                android:shadowColor="#FFFF5A00"
+                android:shadowRadius="8"
+                android:textColor="@color/accent"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/countdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:shadowColor="#AA000000"
+                android:shadowRadius="12"
+                android:textColor="@color/text"
+                android:textSize="96sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </com.dazzclone.cam.AspectFrameLayout>
+
+        <View
+            android:id="@+id/flashOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0"
+            android:background="#FFFFFFFF" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/cameraName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:letterSpacing="0.2"
+        android:paddingTop="4dp"
+        android:textColor="@color/text"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <!-- Camera picker -->
+    <HorizontalScrollView
+        android:id="@+id/pickerScroll"
+        android:layout_width="match_parent"
+        android:layout_height="96dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/picker"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp" />
+    </HorizontalScrollView>
+
+    <!-- Bottom controls -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:paddingHorizontal="32dp">
+
+        <ImageView
+            android:id="@+id/lastPhoto"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="start|center_vertical"
+            android:background="@drawable/thumb_bg"
+            android:contentDescription="Letztes Foto"
+            android:scaleType="centerCrop" />
+
+        <TextView
+            android:id="@+id/importButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|bottom"
+            android:layout_marginBottom="4dp"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp"
+            android:text="IMPORT"
+            android:textColor="@color/muted"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/shutter"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_gravity="center"
+            android:background="@drawable/shutter"
+            android:contentDescription="Auslöser" />
+
+        <TextView
+            android:id="@+id/flipButton"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="end|center_vertical"
+            android:background="@drawable/round_button"
+            android:gravity="center"
+            android:text="⟲"
+            android:textColor="@color/text"
+            android:textSize="26sp" />
+    </FrameLayout>
+</LinearLayout>
