@@ -6,15 +6,13 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 
 /**
- * The whole film look in one fragment-shader pass. Compiled in two flavours:
- * [external] = true samples the live camera SurfaceTexture (OES texture),
- * false samples a regular 2D texture holding a still bitmap.
+ * The whole film look in one fragment-shader pass over a 2D texture.
  *
  * Coordinate model: `v_uv` is the output position (0..1). It is mapped into
- * the crop rectangle of the upright image, then rotated back into buffer
- * space ([setRotation]) and finally through the SurfaceTexture matrix.
+ * the crop rectangle of the image, optionally rotated back into buffer space
+ * (`rotation`) and finally through `texMatrix`.
  */
-class FilmShader(external: Boolean) {
+class FilmShader {
 
     private val program: Int
     private val loc = HashMap<String, Int>()
@@ -24,12 +22,7 @@ class FilmShader(external: Boolean) {
     private val aPos: Int
 
     init {
-        val header = if (external) {
-            "#extension GL_OES_EGL_image_external : require\nprecision highp float;\nuniform samplerExternalOES u_tex;\n"
-        } else {
-            "precision highp float;\nuniform sampler2D u_tex;\n"
-        }
-        program = link(VERT, header + FRAG)
+        program = link(VERT, FRAG)
         aPos = GLES20.glGetAttribLocation(program, "a_pos")
     }
 
@@ -40,8 +33,7 @@ class FilmShader(external: Boolean) {
      * Draws [texture] into the currently bound framebuffer/viewport of size
      * [width] x [height].
      *
-     * @param crop x, y, w, h in upright-image uv (y measured from the top for
-     *   stills, from the bottom for the live preview — both match their source)
+     * @param crop x, y, w, h in upright-image uv
      * @param rotation clockwise degrees the buffer must be rotated to be upright
      */
     fun draw(
@@ -111,6 +103,8 @@ void main() {
 }"""
 
         private const val FRAG = """
+precision highp float;
+uniform sampler2D u_tex;
 varying vec2 v_uv;
 uniform mat4 u_texMatrix;
 uniform vec2 u_res;

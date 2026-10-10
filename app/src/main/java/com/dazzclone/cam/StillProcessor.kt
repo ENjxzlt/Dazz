@@ -56,7 +56,7 @@ class StillProcessor {
         val maxRb = IntArray(1)
         GLES20.glGetIntegerv(GLES20.GL_MAX_RENDERBUFFER_SIZE, maxRb, 0)
         maxSize = minOf(max[0], maxRb[0])
-        shader = FilmShader(external = false)
+        shader = FilmShader()
     }
 
     /**

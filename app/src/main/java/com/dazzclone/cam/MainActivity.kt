@@ -29,13 +29,13 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
-import androidx.camera.core.MirrorMode
-import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import java.util.concurrent.ExecutorService
@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewfinder: AspectFrameLayout
     private lateinit var dateOverlay: TextView
     private lateinit var countdownView: TextView
+    private lateinit var statusView: TextView
     private lateinit var flashOverlay: View
     private lateinit var cameraName: TextView
     private lateinit var picker: LinearLayout
@@ -63,6 +64,9 @@ class MainActivity : AppCompatActivity() {
 
     /** Single thread that owns the offscreen EGL context for photo processing. */
     private val processing: ExecutorService = Executors.newSingleThreadExecutor()
+    /** Receives preview frames from CameraX. */
+    private val analysis: ExecutorService = Executors.newSingleThreadExecutor()
+    @Volatile private var gotFrame = false
     private var stillProcessor: StillProcessor? = null
 
     private var cameraProvider: ProcessCameraProvider? = null
@@ -108,6 +112,7 @@ class MainActivity : AppCompatActivity() {
         viewfinder = findViewById(R.id.viewfinder)
         dateOverlay = findViewById(R.id.dateOverlay)
         countdownView = findViewById(R.id.countdown)
+        statusView = findViewById(R.id.status)
         flashOverlay = findViewById(R.id.flashOverlay)
         cameraName = findViewById(R.id.cameraName)
         picker = findViewById(R.id.picker)
@@ -119,7 +124,16 @@ class MainActivity : AppCompatActivity() {
         lastPhoto.outlineProvider = ViewOutlineProvider.BACKGROUND
         lastPhoto.clipToOutline = true
 
-        renderer = PreviewRenderer(glView) { main.post { bindCamera() } }
+        renderer = PreviewRenderer(
+            glView,
+            onError = { e -> main.post { showStatus("Grafikfehler: ${e.message}") } },
+            onFrame = {
+                if (!gotFrame) {
+                    gotFrame = true
+                    main.post { statusView.visibility = View.GONE }
+                }
+            },
+        )
         glView.setEGLContextClientVersion(2)
         glView.setRenderer(renderer)
         glView.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
@@ -172,7 +186,16 @@ class MainActivity : AppCompatActivity() {
 
         sound.load(MediaActionSound.SHUTTER_CLICK)
         refreshThumbnail()
-        if (!hasCameraPermission()) requestPermission.launch(Manifest.permission.CAMERA)
+        if (hasCameraPermission()) bindCamera()
+        else {
+            showStatus(getString(R.string.permission_needed))
+            requestPermission.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun showStatus(text: String) {
+        statusView.text = text
+        statusView.visibility = View.VISIBLE
     }
 
     override fun onResume() {
@@ -192,6 +215,7 @@ class MainActivity : AppCompatActivity() {
         sound.release()
         processing.execute { stillProcessor?.release() }
         processing.shutdown()
+        analysis.shutdown()
     }
 
     private fun hasCameraPermission() =
@@ -199,12 +223,17 @@ class MainActivity : AppCompatActivity() {
 
     // ---- Camera ----------------------------------------------------------
 
-    /** (Re)binds preview + capture. Called whenever the GL surface or lens changes. */
+    /** (Re)binds preview frames + capture. Called on start, permission grant and lens flip. */
     private fun bindCamera() {
         if (!hasCameraPermission() || isFinishing) return
+        gotFrame = false
+        showStatus("Kamera startet…")
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
-            val provider = runCatching { future.get() }.getOrNull() ?: return@addListener
+            val provider = runCatching { future.get() }.getOrElse {
+                showStatus(getString(R.string.camera_failed) + ": ${it.message}")
+                return@addListener
+            }
             cameraProvider = provider
 
             var selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
@@ -217,13 +246,25 @@ class MainActivity : AppCompatActivity() {
             val resolution = ResolutionSelector.Builder()
                 .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
                 .build()
-            // We mirror the front camera ourselves in the shader, so the stream must not be.
-            val preview = Preview.Builder()
-                .setResolutionSelector(resolution)
-                .setMirrorMode(MirrorMode.MIRROR_MODE_OFF)
+            // Preview frames: upright RGBA from CameraX, uploaded as a texture by the renderer.
+            // Not mirrored by CameraX; the renderer mirrors the front camera itself.
+            val previewFrames = ImageAnalysis.Builder()
+                .setResolutionSelector(
+                    ResolutionSelector.Builder()
+                        .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+                        .setResolutionStrategy(
+                            ResolutionStrategy(
+                                Size(1280, 960),
+                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER,
+                            ),
+                        )
+                        .build(),
+                )
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .setOutputImageRotationEnabled(true)
                 .build()
-            val executor = ContextCompat.getMainExecutor(this)
-            preview.setSurfaceProvider(executor) { request -> renderer.provideSurface(request, executor) }
+            previewFrames.setAnalyzer(analysis, renderer)
 
             val capture = ImageCapture.Builder()
                 .setResolutionSelector(resolution)
@@ -234,9 +275,9 @@ class MainActivity : AppCompatActivity() {
 
             try {
                 provider.unbindAll()
-                provider.bindToLifecycle(this, selector, preview, capture)
+                provider.bindToLifecycle(this, selector, previewFrames, capture)
             } catch (e: Exception) {
-                Toast.makeText(this, R.string.camera_failed, Toast.LENGTH_LONG).show()
+                showStatus(getString(R.string.camera_failed) + ": ${e.message}")
             }
         }, ContextCompat.getMainExecutor(this))
     }
